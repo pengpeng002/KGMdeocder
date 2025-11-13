@@ -18,35 +18,22 @@ import filetype
 from kivy.clock import Clock
 from typing import List, Optional
 from pathlib import Path
-from android.permissions import request_permissions, Permission
-from android import activity
-from jnius import autoclass, cast
-from android.runnable import run_on_ui_thread
 from kivy.core.text import LabelBase
 from kivymd.font_definitions import theme_font_styles
 LabelBase.register(name="font_ch", fn_regular="simkai.ttf")
 theme_font_styles.append('font_ch')
-# from kivy.config import Config
+from kivy.utils import platform
+if platform == "android":
+    from jnius import autoclass, cast
+    from android import activity
+    from android.permissions import request_permissions, Permission
+    from android.runnable import run_on_ui_thread
+    Environment = autoclass('android.os.Environment')
+    Settings = autoclass('android.provider.Settings')
+    Intent = autoclass('android.content.Intent')
+    Uri = autoclass('android.net.Uri')
+    PythonActivity = autoclass('org.kivy.android.PythonActivity')
 
-def callback(request_code, result_code, intent):
-    files = []
-    if intent:
-        # 支持多选
-        if intent.getClipData():
-            clip = cast('android.content.ClipData', intent.getClipData())
-            for i in range(clip.getItemCount()):
-                files.append(str(clip.getItemAt(i).getUri().toString()))
-        elif intent.getData():
-            files.append(str(intent.getData().toString()))
-    print("Selected files:", files)
-
-# Config.set('kivy', 'default_font', ['SimHei', 'Arial'])
-activity.bind(on_activity_result=callback)
-PythonActivity = autoclass('org.kivy.android.PythonActivity')
-Environment = autoclass('android.os.Environment')
-Settings = autoclass('android.provider.Settings')
-Intent = autoclass('android.content.Intent')
-Uri = autoclass('android.net.Uri')
 
 def has_all_files_permission():
     context = PythonActivity.mActivity
@@ -217,6 +204,15 @@ def decoder(file_list):
     except Exception as e:
         return False, f"decrypt failed: {str(e)}"
 
+def get_external_storage_root():
+    if platform == "android": # 安卓使用用户根目录
+        return os.environ.get("EXTERNAL_STORAGE", "/storage/emulated/0")
+    elif platform == "win": # win使用用户桌面
+        return str(Path.home() / "Desktop")
+    elif platform == "linux": # linux使用用户home目录
+        return str(Path.home())
+    else: # 其他系统没接触过，随意了
+        return str(Path.home())
 
 class FileSelectorApp(MDApp):
     def build(self):
@@ -268,24 +264,10 @@ class FileSelectorApp(MDApp):
         return main_layout
     def select_files(self, instance):
         # 使用plyer选择多个文件
-        external_storage_root = os.environ.get("EXTERNAL_STORAGE", "none")
+        external_storage_root = get_external_storage_root()
         print(f'exter:{external_storage_root}')
-        '''download_dir = os.path.join(external_storage_root, "testmkdir")
-        os.makedirs(download_dir, exist_ok=True)
-        file_name = "downloaded_file.txt"
-        file_path = os.path.join(download_dir, file_name)
-
-        with open(file_path, "w") as f:
-                f.write("这是Kivy应用存储在共享外部存储的数据。\n")
-                f.write("此文件需要WRITE_EXTERNAL_STORAGE权限。\n")
-        print(f"文件已写入：{file_path}")'''
         self.file_manager.show(external_storage_root)
-        '''def handle_selection(selection):
-            if selection:
-                display_text = "selected file:\n" + "\n".join([os.path.basename(f) for f in selection])
-                print(f'selection files: {display_text}')
-                self.file_display.text = display_text
-        filechooser.open_file(multiple=True, on_selection=handle_selection)'''
+
     def select_path(self, path):
         self.selected_files = [path][0]  # 存成列表以保持兼容
         print(f'{self.selected_files}, type:{type(self.selected_files)}')
@@ -335,11 +317,12 @@ class FileSelectorApp(MDApp):
 
 if __name__ == '__main__':
     # request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE, Permission.MANAGE_EXTERNAL_STORAGE])
-    if not has_all_files_permission():
-        print("No permission, requesting...")
-        request_manage_all_files()
+    if platform == "android":
         if not has_all_files_permission():
-           exit(1) 
+            print("No permission, requesting...")
+            request_manage_all_files()
+            if not has_all_files_permission():
+               exit(1) 
     FileSelectorApp().run()
 
 
