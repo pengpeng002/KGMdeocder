@@ -5,3 +5,7 @@ decoder .kgm file using python and kivy
 解码部分完全转写自 [ghtz08](https://github.com/ghtz08) 的 [kugou-kgm-decoder](https://github.com/ghtz08/kugou-kgm-decoder)
 注：虽然代码不长，但可能含有大量被注释的代码以及死代码，阅读时请注意  
 待修改：文件选择器中文显示乱码，但暂时不会解决  
+windows和linux桌面系统使用方法：
+  1. 安装python
+  2. cmd控制台输入命令 ```pip install kivy kivymd plyer filetype```
+  3. 在main.py目录下执行 ```python main.py```
