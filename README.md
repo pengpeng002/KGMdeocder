@@ -7,5 +7,5 @@ decoder .kgm file using python and kivy
 待修改：文件选择器中文显示乱码，但暂时不会解决  
 windows和linux桌面系统使用方法：
   1. 安装python
-  2. cmd控制台输入命令 ```pip install kivy kivymd plyer filetype```
+  2. 控制台输入命令 ```pip install kivy kivymd plyer filetype```
   3. 在main.py目录下执行 ```python main.py```
